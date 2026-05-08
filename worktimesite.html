@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>勤務タイマー — 退勤時間が、ひと目でわかる。</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Outfit:wght@300;400;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue: #0058A3;
+    --blue-deep: #003D75;
+    --blue-soft: #E8F0F9;
+    --yellow: #FFD500;
+    --yellow-soft: #FFF6D1;
+    --cream: #FAF8F3;
+    --white: #FFFFFF;
+    --ink: #0E1A2B;
+    --ink-soft: #4A5468;
+    --line: #E6E2D7;
+    --shadow-sm: 0 2px 0 rgba(14, 26, 43, 0.06);
+    --shadow-md: 0 8px 24px rgba(0, 88, 163, 0.08);
+    --shadow-lg: 0 24px 60px rgba(0, 88, 163, 0.12);
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    background:var(--cream);
+    color:var(--ink);
+    line-height:1.7;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- Decorative grain ---------- */
+  body::before{
+    content:'';
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(0, 88, 163, 0.03) 0, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(255, 213, 0, 0.04) 0, transparent 50%);
+    z-index:0;
+  }
+
+  /* ---------- Nav ---------- */
+  nav{
+    position:fixed;
+    top:0;left:0;right:0;
+    z-index:100;
+    padding:18px 32px;
+    background:rgba(250, 248, 243, 0.85);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s ease;
+  }
+  nav.scrolled{border-bottom-color:var(--line)}
+  nav .nav-inner{
+    max-width:1200px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .logo{
+    display:flex;align-items:center;gap:10px;
+    font-weight:900;font-size:18px;letter-spacing:.02em;
+  }
+  .logo-mark{
+    width:32px;height:32px;
+    background:var(--blue);
+    border-radius:8px;
+    position:relative;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .logo-mark::before{
+    content:'';
+    position:absolute;
+    width:14px;height:14px;
+    border:2.5px solid var(--yellow);
+    border-radius:50%;
+    border-top-color:transparent;
+    animation:spin 3s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .nav-cta{
+    background:var(--ink);
+    color:var(--cream);
+    padding:10px 20px;
+    border-radius:999px;
+    text-decoration:none;
+    font-weight:700;
+    font-size:14px;
+    transition:transform .2s ease, background .2s ease;
+  }
+  .nav-cta:hover{background:var(--blue);transform:translateY(-1px)}
+
+  /* ---------- Container ---------- */
+  .container{max-width:1200px;margin:0 auto;padding:0 32px;position:relative;z-index:1}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    padding:140px 0 100px;
+    position:relative;
+    overflow:hidden;
+  }
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1.05fr 1fr;
+    gap:80px;
+    align-items:center;
+  }
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    background:var(--white);
+    border:1px solid var(--line);
+    padding:8px 16px;
+    border-radius:999px;
+    font-size:13px;font-weight:700;
+    color:var(--blue);
+    margin-bottom:28px;
+    box-shadow:var(--shadow-sm);
+    opacity:0;animation:fadeUp .8s .1s forwards;
+  }
+  .eyebrow .dot{width:8px;height:8px;background:var(--yellow);border-radius:50%;box-shadow:0 0 0 4px var(--yellow-soft)}
+
+  h1.hero-title{
+    font-size:clamp(40px, 5.5vw, 76px);
+    line-height:1.08;
+    font-weight:900;
+    letter-spacing:-.02em;
+    margin-bottom:28px;
+  }
+  h1 .accent{
+    position:relative;
+    display:inline-block;
+    color:var(--blue);
+  }
+  h1 .accent::after{
+    content:'';
+    position:absolute;
+    left:-4px;right:-4px;bottom:6px;
+    height:14px;
+    background:var(--yellow);
+    z-index:-1;
+    transform:skewX(-8deg);
+    opacity:.85;
+  }
+  h1 .word{
+    display:inline-block;
+    opacity:0;
+    transform:translateY(20px);
+    animation:fadeUp .8s forwards;
+  }
+  h1 .word:nth-child(1){animation-delay:.2s}
+  h1 .word:nth-child(2){animation-delay:.32s}
+  h1 .word:nth-child(3){animation-delay:.44s}
+  h1 .word:nth-child(4){animation-delay:.56s}
+
+  .hero-sub{
+    font-size:18px;
+    color:var(--ink-soft);
+    max-width:480px;
+    margin-bottom:40px;
+    opacity:0;animation:fadeUp .8s .7s forwards;
+  }
+  .hero-cta-row{
+    display:flex;gap:16px;align-items:center;flex-wrap:wrap;
+    opacity:0;animation:fadeUp .8s .85s forwards;
+  }
+  .btn-primary{
+    background:var(--blue);
+    color:var(--white);
+    padding:18px 32px;
+    border-radius:999px;
+    text-decoration:none;
+    font-weight:700;
+    font-size:16px;
+    display:inline-flex;align-items:center;gap:12px;
+    transition:all .25s ease;
+    box-shadow:0 8px 24px rgba(0, 88, 163, 0.25);
+  }
+  .btn-primary:hover{
+    background:var(--blue-deep);
+    transform:translateY(-2px);
+    box-shadow:0 12px 32px rgba(0, 88, 163, 0.35);
+  }
+  .btn-primary .arrow{
+    width:24px;height:24px;background:var(--yellow);border-radius:50%;
+    display:inline-flex;align-items:center;justify-content:center;
+    transition:transform .25s ease;
+    color:var(--ink);font-weight:900;
+  }
+  .btn-primary:hover .arrow{transform:translateX(3px)}
+
+  .meta-pills{display:flex;gap:20px;color:var(--ink-soft);font-size:14px;font-weight:500}
+  .meta-pills span{display:inline-flex;align-items:center;gap:6px}
+  .meta-pills span::before{content:'✓';color:var(--blue);font-weight:900}
+
+  /* ---------- Hero Visual: Animated Timer Card ---------- */
+  .timer-stage{
+    position:relative;
+    height:520px;
+    opacity:0;animation:fadeUp 1s 1s forwards;
+  }
+  .timer-card{
+    position:absolute;
+    inset:0;
+    background:var(--white);
+    border-radius:32px;
+    padding:36px;
+    box-shadow:var(--shadow-lg);
+    border:1px solid var(--line);
+    display:flex;flex-direction:column;
+    overflow:hidden;
+  }
+  .timer-card::before{
+    content:'';
+    position:absolute;
+    top:-50px;right:-50px;
+    width:200px;height:200px;
+    background:var(--yellow);
+    border-radius:50%;
+    opacity:.18;
+    animation:pulseSoft 4s ease-in-out infinite;
+  }
+  @keyframes pulseSoft{
+    0%,100%{transform:scale(1);opacity:.18}
+    50%{transform:scale(1.1);opacity:.28}
+  }
+
+  .tc-head{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:24px;position:relative;z-index:1;
+  }
+  .tc-label{font-size:13px;font-weight:700;color:var(--ink-soft);letter-spacing:.05em}
+  .tc-status{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--blue-soft);
+    color:var(--blue);
+    padding:6px 14px;border-radius:999px;
+    font-size:12px;font-weight:700;
+  }
+  .tc-status .live-dot{
+    width:7px;height:7px;background:var(--blue);border-radius:50%;
+    animation:livePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes livePulse{
+    0%,100%{opacity:1;transform:scale(1)}
+    50%{opacity:.4;transform:scale(1.4)}
+  }
+
+  .tc-time-display{
+    font-family:'Outfit', sans-serif;
+    font-size:64px;
+    font-weight:300;
+    line-height:1;
+    color:var(--ink);
+    letter-spacing:-.03em;
+    margin-bottom:6px;
+    position:relative;z-index:1;
+  }
+  .tc-time-display .seconds{color:var(--blue);font-weight:600}
+  .tc-elapsed{
+    font-size:14px;color:var(--ink-soft);font-weight:500;
+    margin-bottom:32px;position:relative;z-index:1;
+  }
+  .tc-elapsed strong{color:var(--ink);font-weight:700}
+
+  .tc-progress-wrap{
+    background:#F3EFE3;
+    height:12px;border-radius:999px;
+    margin-bottom:8px;
+    overflow:hidden;position:relative;
+  }
+  .tc-progress{
+    height:100%;
+    background:linear-gradient(90deg, var(--blue) 0%, var(--blue) 60%, var(--yellow) 100%);
+    border-radius:999px;
+    width:0;
+    animation:fillBar 2.5s 1.4s cubic-bezier(.4,0,.2,1) forwards;
+    position:relative;
+  }
+  .tc-progress::after{
+    content:'';
+    position:absolute;
+    right:-2px;top:-4px;
+    width:20px;height:20px;
+    background:var(--yellow);
+    border:3px solid var(--white);
+    border-radius:50%;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  @keyframes fillBar{to{width:62%}}
+
+  .tc-progress-meta{
+    display:flex;justify-content:space-between;
+    font-size:12px;color:var(--ink-soft);
+    margin-bottom:28px;
+    font-family:'DM Mono',monospace;
+  }
+
+  .tc-stats{
+    display:grid;grid-template-columns:1fr 1fr;
+    gap:14px;margin-bottom:24px;
+  }
+  .tc-stat{
+    background:var(--cream);
+    padding:16px;border-radius:16px;
+    border:1px solid var(--line);
+  }
+  .tc-stat-label{font-size:11px;color:var(--ink-soft);font-weight:600;margin-bottom:4px}
+  .tc-stat-value{font-size:20px;font-weight:700;font-family:'Outfit',sans-serif}
+  .tc-stat-value.blue{color:var(--blue)}
+
+  .tc-button{
+    margin-top:auto;
+    background:var(--ink);
+    color:var(--white);
+    padding:18px;
+    border-radius:16px;
+    border:none;
+    font-family:inherit;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    transition:background .2s ease;
+  }
+  .tc-button:hover{background:var(--blue)}
+
+  /* Floating decoration bits */
+  .float-tag{
+    position:absolute;
+    z-index:3;
+    background:var(--yellow);
+    color:var(--ink);
+    padding:10px 18px;
+    border-radius:999px;
+    font-size:13px;font-weight:700;
+    box-shadow:var(--shadow-md);
+    border:2px solid var(--white);
+    animation:floaty 4s ease-in-out infinite;
+    white-space:nowrap;
+  }
+  .ft-1{top:-18px;left:-12px;animation-delay:0s}
+  .ft-2{
+    bottom:80px;right:-20px;
+    background:var(--blue);color:var(--white);
+    animation-delay:1.5s;
+  }
+  @keyframes floaty{
+    0%,100%{transform:translateY(0) rotate(-2deg)}
+    50%{transform:translateY(-10px) rotate(2deg)}
+  }
+
+  /* ---------- Pain points section ---------- */
+  .pain{
+    padding:120px 0 80px;
+    position:relative;
+  }
+  .pain-bg-text{
+    position:absolute;
+    top:30px;left:50%;transform:translateX(-50%);
+    font-size:clamp(80px,18vw,260px);
+    font-weight:900;
+    color:var(--blue-soft);
+    letter-spacing:-.05em;
+    z-index:0;
+    pointer-events:none;
+    white-space:nowrap;
+    font-family:'Outfit',sans-serif;
+  }
+  .section-head{
+    text-align:center;
+    margin-bottom:60px;
+    position:relative;z-index:1;
+  }
+  .section-tag{
+    display:inline-block;
+    font-family:'DM Mono',monospace;
+    font-size:13px;
+    color:var(--blue);
+    margin-bottom:16px;
+    font-weight:500;
+  }
+  .section-tag::before{content:'— '}
+  .section-tag::after{content:' —'}
+  h2.section-title{
+    font-size:clamp(32px,4vw,52px);
+    font-weight:900;
+    letter-spacing:-.02em;
+    line-height:1.2;
+    margin-bottom:16px;
+  }
+  .section-sub{
+    color:var(--ink-soft);
+    max-width:560px;margin:0 auto;
+  }
+  .pain-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+    position:relative;z-index:1;
+  }
+  .pain-card{
+    background:var(--white);
+    padding:32px 28px;
+    border-radius:24px;
+    border:1px solid var(--line);
+    transition:transform .3s ease, box-shadow .3s ease;
+  }
+  .pain-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md)}
+  .pain-emoji{font-size:36px;margin-bottom:16px;display:block}
+  .pain-card h3{font-size:18px;font-weight:700;margin-bottom:8px}
+  .pain-card p{color:var(--ink-soft);font-size:14px}
+
+  /* ---------- Features ---------- */
+  .features{
+    padding:100px 0;
+    background:var(--white);
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    position:relative;
+  }
+  .features-grid{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    grid-auto-rows:minmax(220px, auto);
+    gap:20px;
+  }
+  .feature{
+    border-radius:24px;
+    padding:32px;
+    position:relative;
+    overflow:hidden;
+    transition:transform .3s ease;
+    border:1px solid var(--line);
+  }
+  .feature:hover{transform:translateY(-4px)}
+  .feature.f1{grid-column:span 4;background:var(--blue);color:var(--white);border-color:var(--blue)}
+  .feature.f2{grid-column:span 2;background:var(--yellow);border-color:var(--yellow)}
+  .feature.f3{grid-column:span 2;background:var(--cream)}
+  .feature.f4{grid-column:span 2;background:var(--white)}
+  .feature.f5{grid-column:span 2;background:var(--blue-soft);border-color:transparent}
+  .feature.f6{grid-column:span 3;background:var(--ink);color:var(--cream);border-color:var(--ink)}
+  .feature.f7{grid-column:span 3;background:var(--white)}
+
+  .feature-num{
+    font-family:'DM Mono',monospace;
+    font-size:13px;font-weight:500;opacity:.5;
+    margin-bottom:auto;
+  }
+  .feature h3{
+    font-size:24px;font-weight:900;
+    line-height:1.3;
+    margin:auto 0 12px;
+  }
+  .feature p{font-size:14px;line-height:1.6;opacity:.85}
+  .feature-icon{
+    width:56px;height:56px;
+    border-radius:16px;
+    background:rgba(255,255,255,.18);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:20px;
+  }
+  .feature.f2 .feature-icon{background:rgba(14,26,43,.1)}
+  .feature.f3 .feature-icon, .feature.f4 .feature-icon, .feature.f7 .feature-icon{background:var(--blue-soft);color:var(--blue)}
+  .feature.f5 .feature-icon{background:var(--white)}
+
+  /* Big animated clock for hero feature */
+  .mini-clock{
+    position:absolute;
+    right:-30px;bottom:-40px;
+    width:200px;height:200px;
+    border-radius:50%;
+    border:6px solid rgba(255,255,255,.2);
+    background:rgba(255,255,255,.06);
+  }
+  .mini-clock::before, .mini-clock::after{
+    content:'';
+    position:absolute;
+    background:var(--yellow);
+    left:50%;top:50%;
+    transform-origin:center bottom;
+    border-radius:4px;
+  }
+  .mini-clock::before{
+    width:4px;height:60px;
+    margin-left:-2px;margin-top:-60px;
+    animation:rotateHand 60s linear infinite;
+  }
+  .mini-clock::after{
+    width:3px;height:80px;
+    margin-left:-1.5px;margin-top:-80px;
+    background:var(--white);
+    animation:rotateHand 6s linear infinite;
+  }
+  @keyframes rotateHand{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+  /* ---------- Steps ---------- */
+  .steps{
+    padding:120px 0;
+    position:relative;
+  }
+  .steps-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:32px;
+    position:relative;
+  }
+  .step{
+    background:var(--white);
+    padding:40px 32px;
+    border-radius:24px;
+    border:1px solid var(--line);
+    position:relative;
+    transition:transform .3s ease, box-shadow .3s ease;
+  }
+  .step:hover{transform:translateY(-6px);box-shadow:var(--shadow-md)}
+  .step-num{
+    position:absolute;
+    top:-24px;left:32px;
+    width:56px;height:56px;
+    background:var(--yellow);
+    border-radius:16px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Outfit',sans-serif;
+    font-weight:800;
+    font-size:24px;
+    box-shadow:var(--shadow-sm);
+    transform:rotate(-6deg);
+    transition:transform .3s ease;
+  }
+  .step:hover .step-num{transform:rotate(0deg) scale(1.05)}
+  .step h3{font-size:22px;font-weight:900;margin:24px 0 12px;letter-spacing:-.01em}
+  .step p{color:var(--ink-soft);font-size:15px;margin-bottom:20px}
+  .step-visual{
+    background:var(--cream);
+    border-radius:16px;
+    padding:20px;
+    border:1px solid var(--line);
+    height:120px;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;
+  }
+
+  /* Step 1 visual: tap button */
+  .sv-tap{
+    background:var(--blue);
+    color:var(--white);
+    padding:14px 28px;
+    border-radius:12px;
+    font-weight:700;
+    font-size:14px;
+    position:relative;
+  }
+  .sv-tap::before, .sv-tap::after{
+    content:'';
+    position:absolute;
+    border:2px solid var(--blue);
+    border-radius:50%;
+    inset:-4px;
+    animation:ripple 2s ease-out infinite;
+  }
+  .sv-tap::after{animation-delay:1s}
+  @keyframes ripple{
+    from{opacity:.6;transform:scale(.95)}
+    to{opacity:0;transform:scale(1.4)}
+  }
+
+  /* Step 2 visual: counter */
+  .sv-counter{
+    font-family:'Outfit',sans-serif;
+    font-size:36px;font-weight:300;
+    color:var(--blue);
+    letter-spacing:-.02em;
+  }
+  .sv-counter span{color:var(--ink)}
+
+  /* Step 3 visual: progress */
+  .sv-progress{
+    width:80%;
+    height:10px;
+    background:#F3EFE3;
+    border-radius:999px;
+    overflow:hidden;
+    position:relative;
+  }
+  .sv-progress-fill{
+    width:65%;height:100%;
+    background:linear-gradient(90deg, var(--blue), var(--yellow));
+    border-radius:999px;
+  }
+
+  /* ---------- Target users ---------- */
+  .target{
+    padding:120px 0;
+    background:var(--blue);
+    color:var(--white);
+    position:relative;
+    overflow:hidden;
+  }
+  .target::before{
+    content:'';
+    position:absolute;
+    top:-100px;right:-100px;
+    width:400px;height:400px;
+    background:var(--yellow);
+    border-radius:50%;
+    opacity:.1;
+  }
+  .target::after{
+    content:'';
+    position:absolute;
+    bottom:-150px;left:-100px;
+    width:500px;height:500px;
+    border:2px solid rgba(255,255,255,.08);
+    border-radius:50%;
+  }
+  .target .section-tag{color:var(--yellow)}
+  .target h2{color:var(--white)}
+  .target .section-sub{color:rgba(255,255,255,.75)}
+  .target-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+    position:relative;z-index:1;
+  }
+  .target-card{
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(10px);
+    padding:32px;
+    border-radius:24px;
+    display:flex;gap:24px;align-items:flex-start;
+    transition:background .3s ease, transform .3s ease;
+  }
+  .target-card:hover{background:rgba(255,255,255,.08);transform:translateY(-3px)}
+  .target-icon{
+    flex-shrink:0;
+    width:64px;height:64px;
+    background:var(--yellow);
+    color:var(--ink);
+    border-radius:18px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:30px;
+    font-weight:900;
+  }
+  .target-card h3{font-size:18px;font-weight:800;margin-bottom:8px;color:var(--white)}
+  .target-card p{color:rgba(255,255,255,.75);font-size:14px;line-height:1.6}
+
+  /* ---------- Final CTA ---------- */
+  .final-cta{
+    padding:120px 0;
+    text-align:center;
+    position:relative;
+  }
+  .cta-card{
+    background:var(--cream);
+    border:1px solid var(--line);
+    border-radius:32px;
+    padding:80px 40px;
+    position:relative;
+    overflow:hidden;
+  }
+  .cta-card::before{
+    content:'';
+    position:absolute;
+    top:-80px;left:50%;transform:translateX(-50%);
+    width:300px;height:300px;
+    background:var(--yellow);
+    border-radius:50%;
+    opacity:.2;
+    filter:blur(60px);
+  }
+  .cta-card h2{
+    font-size:clamp(36px,5vw,64px);
+    font-weight:900;
+    line-height:1.1;letter-spacing:-.02em;
+    margin-bottom:20px;
+    position:relative;z-index:1;
+  }
+  .cta-card p{
+    font-size:17px;color:var(--ink-soft);
+    margin-bottom:40px;
+    position:relative;z-index:1;
+  }
+  .cta-card .btn-primary{position:relative;z-index:1;font-size:17px;padding:20px 36px}
+
+  /* ---------- Footer ---------- */
+  footer{
+    padding:48px 32px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+    border-top:1px solid var(--line);
+  }
+  footer .logo{justify-content:center;margin-bottom:12px}
+
+  /* ---------- Animations ---------- */
+  @keyframes fadeUp{
+    from{opacity:0;transform:translateY(24px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+
+  /* Scroll reveal */
+  .reveal{opacity:0;transform:translateY(30px);transition:opacity .8s ease, transform .8s ease}
+  .reveal.in{opacity:1;transform:translateY(0)}
+  .reveal-stagger > *{opacity:0;transform:translateY(30px);transition:opacity .8s ease, transform .8s ease}
+  .reveal-stagger.in > *{opacity:1;transform:translateY(0)}
+  .reveal-stagger.in > *:nth-child(1){transition-delay:0s}
+  .reveal-stagger.in > *:nth-child(2){transition-delay:.1s}
+  .reveal-stagger.in > *:nth-child(3){transition-delay:.2s}
+  .reveal-stagger.in > *:nth-child(4){transition-delay:.3s}
+  .reveal-stagger.in > *:nth-child(5){transition-delay:.4s}
+  .reveal-stagger.in > *:nth-child(6){transition-delay:.5s}
+  .reveal-stagger.in > *:nth-child(7){transition-delay:.6s}
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px){
+    nav{padding:14px 20px}
+    .container{padding:0 20px}
+    .hero{padding:120px 0 60px}
+    .hero-grid{grid-template-columns:1fr;gap:60px}
+    .timer-stage{height:480px;max-width:380px;margin:0 auto;width:100%}
+    .pain-grid, .steps-grid, .target-grid{grid-template-columns:1fr;gap:16px}
+    .features-grid{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
+    .feature{grid-column:span 1!important;min-height:180px;display:flex;flex-direction:column}
+    .feature.f1, .feature.f6{grid-column:span 2!important}
+    .cta-card{padding:60px 24px}
+    .meta-pills{flex-wrap:wrap;gap:12px}
+    .pain-bg-text{font-size:120px;top:60px}
+  }
+  @media (max-width: 520px){
+    h1.hero-title{font-size:42px}
+    .tc-time-display{font-size:48px}
+    .features-grid{grid-template-columns:1fr}
+    .feature{grid-column:span 1!important}
+    .feature.f1, .feature.f6{grid-column:span 1!important}
+  }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <span class="logo-mark"></span>
+      <span>勤務タイマー</span>
+    </a>
+    <a href="https://riri-sushi.github.io/work-timer/" target="_blank" rel="noopener" class="nav-cta">使ってみる</a>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">
+          <span class="dot"></span>
+          シンプルな勤務時間カウンター
+        </div>
+        <h1 class="hero-title">
+          <span class="word">退勤時間が、</span><br>
+          <span class="word">ひと目で</span>
+          <span class="word"><span class="accent">わかる。</span></span>
+        </h1>
+        <p class="hero-sub">
+          ワンタップで出勤を記録するだけ。あとは退勤時刻まで、自動でカウントしてくれます。インストール不要、登録不要、完全無料。
+        </p>
+        <div class="hero-cta-row">
+          <a href="https://riri-sushi.github.io/work-timer/" target="_blank" rel="noopener" class="btn-primary">
+            今すぐ使ってみる
+            <span class="arrow">→</span>
+          </a>
+          <div class="meta-pills">
+            <span>登録不要</span>
+            <span>完全無料</span>
+            <span>スマホ対応</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Animated timer mock -->
+      <div class="timer-stage">
+        <div class="float-tag ft-1">⏱ 自動カウント中</div>
+        <div class="timer-card">
+          <div class="tc-head">
+            <div class="tc-label">勤務経過時間</div>
+            <div class="tc-status"><span class="live-dot"></span>勤務中</div>
+          </div>
+          <div class="tc-time-display">
+            5:18<span class="seconds">:<span id="liveSec">42</span></span>
+          </div>
+          <div class="tc-elapsed">
+            <strong>5時間18分</strong> 経過しました
+          </div>
+
+          <div class="tc-progress-wrap">
+            <div class="tc-progress"></div>
+          </div>
+          <div class="tc-progress-meta">
+            <span>09:00 出勤</span>
+            <span>62%</span>
+            <span>18:00 退勤</span>
+          </div>
+
+          <div class="tc-stats">
+            <div class="tc-stat">
+              <div class="tc-stat-label">現在時刻</div>
+              <div class="tc-stat-value" id="liveClock">14:18</div>
+            </div>
+            <div class="tc-stat">
+              <div class="tc-stat-label">退勤まで</div>
+              <div class="tc-stat-value blue">3:42:18</div>
+            </div>
+          </div>
+
+          <button class="tc-button">退勤を記録する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PAIN POINTS ============ -->
+<section class="pain">
+  <div class="pain-bg-text">9 to 18</div>
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag">こんなこと、ありませんか</span>
+      <h2 class="section-title">「あれ、何時に来たっけ…？」</h2>
+      <p class="section-sub">勤務時間の管理は、意外と面倒。複雑なアプリも、紙のメモも、続かない。</p>
+    </div>
+    <div class="pain-grid reveal-stagger">
+      <div class="pain-card">
+        <span class="pain-emoji">🤔</span>
+        <h3>出勤時間を忘れる</h3>
+        <p>朝バタバタしていて、何時に出勤したかうろ覚え。残業時間も曖昧になりがち。</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">⏰</span>
+        <h3>退勤まで何時間？</h3>
+        <p>「あと何時間で帰れるんだっけ」を毎回計算するのが地味にストレス。</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-emoji">📱</span>
+        <h3>アプリが複雑すぎる</h3>
+        <p>勤怠アプリは多機能で重い。会員登録もしたくない。シンプルでいい。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section class="features">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag">Features</span>
+      <h2 class="section-title">必要なものだけ、迷わず使える。</h2>
+      <p class="section-sub">余計な機能は、ありません。だから誰でも、すぐに使えます。</p>
+    </div>
+    <div class="features-grid reveal-stagger">
+      <div class="feature f1">
+        <div class="feature-num">01</div>
+        <div class="feature-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3>ワンタップで<br>出勤を記録</h3>
+        <p>サイトを開いて、ボタンを押すだけ。複雑な操作は一切ありません。</p>
+        <div class="mini-clock"></div>
+      </div>
+
+      <div class="feature f2">
+        <div class="feature-num">02</div>
+        <div class="feature-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>
+        </div>
+        <h3>リアルタイム<br>カウント</h3>
+        <p>秒単位で経過時間を表示。</p>
+      </div>
+
+      <div class="feature f3">
+        <div class="feature-num">03</div>
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18"/></svg>
+        </div>
+        <h3>退勤時刻を<br>自動計算</h3>
+        <p>実働＋休憩時間を自動で計算します。</p>
+      </div>
+
+      <div class="feature f4">
+        <div class="feature-num">04</div>
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14.7 6.3a1 1 0 010 1.4l-9 9-4 1 1-4 9-9a1 1 0 011.4 0l1.6 1.6z"/></svg>
+        </div>
+        <h3>あとから<br>時刻修正OK</h3>
+        <p>うっかり押し忘れても安心。</p>
+      </div>
+
+      <div class="feature f5">
+        <div class="feature-num">05</div>
+        <div class="feature-icon" style="color:var(--blue)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14l-3-3"/></svg>
+        </div>
+        <h3>登録不要・<br>完全無料</h3>
+        <p>アカウント作成なしで、すぐ。</p>
+      </div>
+
+      <div class="feature f6">
+        <div class="feature-num">06</div>
+        <div class="feature-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M12 18h.01"/></svg>
+        </div>
+        <h3>スマホでもPCでも、見やすく動く。</h3>
+        <p>レスポンシブ対応。スマホ画面ではホーム画面に追加してアプリのように使えます。</p>
+      </div>
+
+      <div class="feature f7">
+        <div class="feature-num">07</div>
+        <div class="feature-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <h3>進捗バーで<br>視覚的にわかる</h3>
+        <p>「あと何%で終わる」が一目で。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STEPS ============ -->
+<section class="steps">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag">How it works</span>
+      <h2 class="section-title">3ステップで、すぐ使える。</h2>
+      <p class="section-sub">難しい設定はありません。今日からすぐに、あなたの勤務時間を見える化。</p>
+    </div>
+    <div class="steps-grid reveal-stagger">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>サイトを開く</h3>
+        <p>ブラウザでURLにアクセスするだけ。アプリのインストールは不要です。</p>
+        <div class="step-visual">
+          <div class="sv-tap">サイトを開く</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>出勤ボタンをタップ</h3>
+        <p>「今すぐ出勤を記録」を押すだけ。時刻を後から指定することもできます。</p>
+        <div class="step-visual">
+          <div class="sv-counter">00:00<span>:00</span></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>退勤まで自動カウント</h3>
+        <p>あとは見るだけ。退勤予定時刻まで、リアルタイムで経過時間を表示します。</p>
+        <div class="step-visual">
+          <div class="sv-progress"><div class="sv-progress-fill"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TARGET USERS ============ -->
+<section class="target">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-tag">For You</span>
+      <h2 class="section-title">こんな人に、おすすめです。</h2>
+      <p class="section-sub">勤務時間を「ちょっと意識したい」全ての方へ。</p>
+    </div>
+    <div class="target-grid reveal-stagger">
+      <div class="target-card">
+        <div class="target-icon">💼</div>
+        <div>
+          <h3>定時で帰りたいオフィスワーカー</h3>
+          <p>「あと何時間で帰れる？」を一目で確認。残業を意識的にコントロールしたい方に。</p>
+        </div>
+      </div>
+      <div class="target-card">
+        <div class="target-icon">🌙</div>
+        <div>
+          <h3>シフト勤務・夜勤の方</h3>
+          <p>不規則な勤務時間でも、出勤時刻を入力するだけで、その日の勤務時間が見える化できます。</p>
+        </div>
+      </div>
+      <div class="target-card">
+        <div class="target-icon">💻</div>
+        <div>
+          <h3>在宅・フリーランスの方</h3>
+          <p>つい時間を忘れて働きすぎてしまう人へ。働きすぎ防止と、適切な休憩のために。残業時間管理にも。</p>
+        </div>
+      </div>
+      <div class="target-card">
+        <div class="target-icon">📚</div>
+        <div>
+          <h3>学生バイト・パートタイマー</h3>
+          <p>シンプルなツールで、自分の勤務時間を自分で把握。給与計算の参考にも便利です。</p>
+        </div>
+      </div>
+      <div class="target-card">
+        <div class="target-icon">⚡</div>
+        <div>
+          <h3>シンプルなツールが好きな方</h3>
+          <p>多機能アプリは結局使いこなせない。本当に必要な機能だけ欲しい人に最適です。</p>
+        </div>
+      </div>
+      <div class="target-card">
+        <div class="target-icon">🎯</div>
+        <div>
+          <h3>集中して仕事を進めたい方</h3>
+          <p>残り時間を意識することで、メリハリのある働き方が自然と身につきます。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="final-cta">
+  <div class="container">
+    <div class="cta-card reveal">
+      <h2>今日から、<br>退勤時間を<span style="color:var(--blue)">見える化</span>。</h2>
+      <p>登録もインストールも不要。サイトを開けば、すぐに使えます。</p>
+      <a href="https://riri-sushi.github.io/work-timer/" target="_blank" rel="noopener" class="btn-primary">
+        勤務タイマーを開く
+        <span class="arrow">→</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="logo">
+    <span class="logo-mark"></span>
+    <span>勤務タイマー</span>
+  </div>
+  <p>シンプルな勤務時間カウンター &nbsp;·&nbsp; © 2026</p>
+</footer>
+
+<script>
+  // Sticky nav border on scroll
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 10);
+  });
+
+  // Live ticking seconds in hero mock
+  const sec = document.getElementById('liveSec');
+  const clock = document.getElementById('liveClock');
+  let s = 42;
+  setInterval(() => {
+    s = (s + 1) % 60;
+    if (sec) sec.textContent = String(s).padStart(2, '0');
+  }, 1000);
+  // update real clock display
+  function tickClock(){
+    const now = new Date();
+    if (clock) clock.textContent = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  }
+  tickClock();
+  setInterval(tickClock, 30000);
+
+  // Scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>
